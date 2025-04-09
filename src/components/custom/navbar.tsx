@@ -23,26 +23,23 @@ const Navbar = () => {
                 </Link>
             </section>
             <section>
-                <ul className="flex justify-between items-center font-bold mx-3 gap-3">
-                    <li className={`bg-gray-200 p-2 rounded-full`}>
-                        <FaBell className='-rotate-12' />
-                    </li>
-                    <li className={`${pathname === '/dashboard' ? 'bg-orange-400 text-white' : 'hover:bg-orange-200'} p-2 rounded-lg`}>
+                <ul className="flex justify-between items-center font-bold mx-1 md:mx-3 space-x-2 md:space-x-4">
+                    <li className={`flex text-center p-1 md:p-2 rounded-lg ${pathname === '/dashboard' ? 'bg-orange-400 text-white' : 'hover:bg-orange-200'}`}>
                         <Link href="/dashboard">
                             Drawing Map
                         </Link>
                     </li>
-                    <li className={`${pathname === '/survey' ? 'bg-orange-400 text-white' : 'hover:bg-orange-200'} p-2 rounded-lg`}>
+                    <li className={`flex text-center p-1 md:p-2 rounded-lg ${pathname === '/survey' ? 'bg-orange-400 text-white' : 'hover:bg-orange-200'}`}>
                         <Link href="/survey">
                             Survey
                         </Link>
                     </li>
-                    <li className={`${pathname === '/ismart' ? 'bg-orange-400 text-white' : 'hover:bg-orange-200'} p-2 rounded-lg`}>
+                    <li className={`flex text-center p-1 md:p-2 rounded-lg ${pathname === '/ismart' ? 'bg-orange-400 text-white' : 'hover:bg-orange-200'}`}>
                         <Link href="/ismart">
                             I-Smart
                         </Link>
                     </li>
-                    <li className={`${pathname === '/user-profile' ? 'bg-orange-400 text-white' : 'hover:bg-orange-200'} p-2 rounded-lg`}>
+                    <li className={`flex text-center p-1 md:p-2 rounded-lg ${pathname === '/user-profile' ? 'bg-orange-400 text-white' : 'hover:bg-orange-200'}`}>
                         <Link href="/user-profile">
                             Profile User
                         </Link>

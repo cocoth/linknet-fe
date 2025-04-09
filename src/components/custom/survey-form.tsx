@@ -36,6 +36,7 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
 
     const [searchInput, setSearchInput] = useState<string>(""); // State untuk input pencarian
     const [error, setError] = useState<string | null>(null)
+    const [msg, setMsg] = useState<string | null>(null)
     const [alertKey, setAlertKey] = useState(0)
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -126,16 +127,35 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
         fetchCallSigns();
     }, [formData.surveyors]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                onClose(); // Call onClose when Esc is pressed
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown); // Cleanup listener on unmount
+        };
+    }, [onClose]);
+
     const handleSearch = async (callSign: string) => {
+        if (!callSign) {
+            setResult(null);
+            setMsg(null);
+            return;
+        }
         setLoading(true);
         try {
             const response = await GetUserByCallSign(callSign.trim());
             if (response.status === "Ok") {
                 setResult(response.data[0]);
-                setError(null);
+                setMsg(null);
             } else {
                 setResult(null);
-                setError("User not found");
+                setMsg("User not found");
             }
         } catch (error) {
             setError("An error occurred while searching");
@@ -187,10 +207,10 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
             }}
             className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
         >
-            <div className="absolute inset-0" onClick={onClose}></div>
-             {error && (<AlertDialouge key={alertKey} message={error} />)}
-            <Card className="relative bg-gray-50 shadow-lg rounded-lg w-full m-5 md:m-10 overflow-x-scroll xl:overflow-x-hidden z-50 p-6">
-                <div className="grid grid-cols-2 gap-4">
+            <div className="fixed inset-0" onClick={onClose}></div>
+            {error && (<AlertDialouge key={alertKey} message={error} />)}
+            <Card className="relative bg-gray-50 shadow-lg max-w-6xl max-h-svh rounded-lg w-full m-5 md:m-10 overflow-x-scroll xl:overflow-x-hidden z-50 p-6">
+                <div className="grid md:grid-cols-2 gap-4">
                     <section>
                         <div className="">
                             <label htmlFor="title" className="text-sm font-semibold">
@@ -306,10 +326,10 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                                 className="border border-gray-300 rounded-md p-2"
                             />
                             {loading && <p className="text-sm text-gray-500">Loading...</p>}
-                            {error && <p className="text-sm text-red-500">{error}</p>}
+                            {msg && <p className="text-sm text-red-500">{msg}</p>}
                             {result && (
                                 <div
-                                    className="bg-gray-200 text-sm px-3 py-1 rounded-md cursor-pointer mt-2"
+                                    className="bg-gray-200 text-sm px-3 py-1 w-max rounded-md cursor-pointer mt-2"
                                     onClick={handleAddSurveyor}
                                 >
                                     {result.call_sign}
@@ -317,21 +337,24 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                             )}
                             <div className="mt-2">
                                 <p className="text-sm font-semibold">Selected Surveyors:</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {callSigns.trim().split(",").map((callSign, index) => (
-                                        <div
-                                            key={index}
-                                            className="bg-gray-300 text-sm px-3 py-1 rounded-md"
-                                        >
-                                            {callSign}
-                                        </div>
-                                    ))}
-                                </div>
+                                {callSigns && callSigns.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {callSigns.trim().split(",").map((callSign, index) => (
+                                            <div
+                                                key={index}
+                                                className="bg-gray-300 text-sm px-3 py-1 rounded-md"
+                                            >
+                                                {callSign}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )
+                                }
                             </div>
                         </div>
                         <section className="flex flex-col justify-center mt-4">
                             <div
-                                className="border border-dashed border-gray-400 rounded-md p-3 text-center"
+                                className="border border-dashed border-gray-400 rounded-md p-3 h-40 text-center"
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={handleFileDrop}
                                 onClick={() => document.getElementById("fileInput")?.click()} // Klik input file secara programatik
@@ -350,7 +373,7 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                                     <img
                                         src={previewUrl}
                                         alt="Preview"
-                                        className={`${selectedFile? 'mt-0': 'mt-4'} w-full h-auto max-h-40 object-contain`}
+                                        className={`${selectedFile ? 'mt-0' : 'mt-4'} w-full h-full max-h-40 object-contain`}
                                     />
                                 )}
                             </div>

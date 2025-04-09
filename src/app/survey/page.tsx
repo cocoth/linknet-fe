@@ -15,6 +15,7 @@ import { FaMagnifyingGlass, FaRegTrashCan } from 'react-icons/fa6'
 import ViewReport from './fe-survey-view'
 import { IoMdDownload } from "react-icons/io";
 import SurveyForm from '@/components/custom/survey-form'
+import { DeleteFile } from '@/lib/be-file-handler'
 
 
 const SurveyPage = () => {
@@ -136,13 +137,14 @@ const SurveyPage = () => {
         if (dataToDelete) {
             try {
                 const result = await DeleteSurvey(dataToDelete.id!);
-                if (result.status === "Ok") {
+                const deleteFile = await DeleteFile(dataToDelete.image_id!)
+                if (result.status === "Ok" && deleteFile.status === "Ok") {
                     window.location.reload()
                 } else {
-                    showAlert(`Failed to delete user: ${dataToDelete.title}`)
+                    showAlert(`Failed to delete: ${dataToDelete.title}`)
                 }
             } catch (error) {
-                showAlert("Failed to delete user");
+                showAlert("Failed to delete");
             }
         }
     };

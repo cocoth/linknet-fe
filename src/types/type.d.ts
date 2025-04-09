@@ -58,6 +58,15 @@ export interface SurveyView{
     CreatedAt: string
 }
 
+export interface ISmart {
+    id?: string
+    fiber_node?: string
+    address?: string
+    coordinate?: string
+    street?: string
+    CreatedAt?: string
+}
+
 
 export interface ResponseAPI{
     code: number
