@@ -23,7 +23,7 @@ const SurveyPage = () => {
     const [dataToEdit, setDataToEdit] = useState<Survey | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState<boolean>(true)
-    
+
     const [alertKey, setAlertKey] = useState<number>(0)
     const [dialogue, setDialogue] = useState<boolean>(false)
 
@@ -36,19 +36,24 @@ const SurveyPage = () => {
         setAlertKey((p) => p + 1)
         setError(msg)
     }
+    const fetchSurveys = async () => {
+        setLoading(true);
+        try {
+            const result = await GetSurveys();
+            if (result.status === "Ok") {
+                setSurveys(result.data);
+                setError(null);
+            } else {
+                showAlert(result.message || "Failed to fetch surveys");
+            }
+        } catch (error) {
+            showAlert("Error to fetch surveys");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchSurveys = async () => {
-            setLoading(true)
-            const result = await GetSurveys()
-            if (result.status === "Ok") {
-                setSurveys(result.data)
-                setError(null)
-            } else {
-                showAlert(result.message || "Failed to fetch surveys")
-            }
-            setLoading(false)
-        }
         fetchSurveys()
     }, [])
 
@@ -87,14 +92,14 @@ const SurveyPage = () => {
         }
     }
 
+
+
     const handleEditSurvey = async (survey: Survey) => {
         if (dataToEdit) {
             try {
                 const result = await UpdateSurvey(dataToEdit.id!, survey);
                 if (result.status === "Ok") {
-                    setSurveys((prev) =>
-                        prev.map((u) => (u.id === dataToEdit.id ? { ...u, ...dataToEdit } : u))
-                    );
+                    await fetchSurveys()
                 }
             } catch (error) {
                 showAlert("Error to edit survey");
@@ -116,7 +121,7 @@ const SurveyPage = () => {
         }
     }
 
-    const handleAddSurvey = async (survey: Survey)=>{
+    const handleAddSurvey = async (survey: Survey) => {
         try {
             const response = await AddSurvey(survey)
             if (response.status === "Ok") {
@@ -127,7 +132,7 @@ const SurveyPage = () => {
             }
         } catch (error) {
             showAlert("Failed to add survey");
-            
+
         }
     }
 
@@ -196,7 +201,7 @@ const SurveyPage = () => {
                     ) : (
                         <ul className="space-y-2">
                             {surveyView && report && (
-                                <ViewReport data={report} onClose={()=>setSurveyView(false)} />
+                                <ViewReport data={report} onClose={() => setSurveyView(false)} />
                             )}
                             {surveys.map((wo, index) => (
                                 <li
@@ -264,7 +269,7 @@ const SurveyPage = () => {
                     <div className="fixed bottom-5 right-5 z-50">
                         <div
                             className='group cursor-pointer bg-blue-500 text-white p-2 md:p-4 shadow-lg shadow-black rounded-full hover:bg-blue-600'
-                            onClick={() =>{ 
+                            onClick={() => {
                                 setDataToEdit(null)
                                 setIsVisible(true)
                             }}
