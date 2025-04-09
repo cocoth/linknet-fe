@@ -1,21 +1,151 @@
-"use client"
+"use client";
 
-import React, { useState } from 'react'
-import { Card } from '../ui/card'
-import { Input } from '../ui/input'
-import { Survey } from '@/types/type';
-
+import React, { useCallback, useEffect, useState } from "react";
+import { Card } from "../ui/card";
+import { Input } from "../ui/input";
+import { Survey, User } from "@/types/type";
+import { GetUserByCallSign, GetUserById } from "@/lib/be-user-handler";
+import { debounce } from "@/lib/utils";
+import { DownloadFile, GetFileByID, UploadFile } from "@/lib/be-file-handler";
 
 interface SurveyFormProps {
     onClose: () => void;
     onSubmit: (data: Survey) => void;
-    survey: Survey
+    survey?: Survey;
 }
 
 const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
     const [formData, setFormData] = useState<Survey>({
-        ...survey,
+        title: survey?.title || "",
+        form_number: survey?.form_number || "",
+        fat: survey?.fat || "",
+        customer_name: survey?.customer_name || "",
+        address: survey?.address || "",
+        node_fdt: survey?.node_fdt || "",
+        survey_date: survey?.survey_date ? new Date(survey.survey_date) : new Date(),
+        questor_name: survey?.questor_name || "",
+        surveyors: survey?.surveyors || [],
+        image_id: survey?.image_id || "",
+        CreatedAt: survey?.CreatedAt || new Date().toString(),
     });
+
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState<User | null>(null);
+    const [callSigns, setCallSigns] = useState<string>(""); // To store call signs for surveyors
+
+    const [searchInput, setSearchInput] = useState<string>(""); // State untuk input pencarian
+    const [error, setError] = useState<string | null>(null)
+
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file)); // Generate preview URL
+        }
+    };
+
+    const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file)); // Generate preview URL
+        }
+    };
+
+    const handleUpload = async () => {
+        if (!selectedFile) return;
+        setUploading(true);
+        try {
+            const uploadResponse = await UploadFile(selectedFile);
+            if (uploadResponse.status === "Ok" && uploadResponse.data?.id) {
+                const fileId = uploadResponse.data.id;
+                const fileResponse = await GetFileByID(fileId);
+                console.log(`File response:`, JSON.stringify(fileResponse));
+                if (fileResponse.status === "Ok" && fileResponse.data[0]?.id) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        image_id: fileResponse.data[0].id, // Set image_id from response
+                    }));
+                    alert("File uploaded successfully!");
+                } else {
+                    alert(fileResponse.message);
+                }
+            } else {
+                alert("Failed to upload file.");
+            }
+        } catch (error) {
+            console.error("Error uploading file:", error);
+            alert("An error occurred during file upload.");
+        } finally {
+            setUploading(false);
+        }
+    };
+    useEffect(() => {
+        const fetchPreviewImage = async () => {
+            if (formData.image_id) {
+                const response = await DownloadFile(formData.image_id);
+                if (response.success && response.data?.fileUrl) {
+                    setPreviewUrl(response.data.fileUrl); // Set preview URL
+                } else {
+                    console.error("Failed to fetch preview image");
+                }
+            }
+        };
+
+        fetchPreviewImage();
+    }, [formData.image_id]);
+
+    // Fetch call signs for existing surveyors when editing
+    useEffect(() => {
+        const fetchCallSigns = async () => {
+            if (formData.surveyors && formData.surveyors.length > 0) {
+                const callSignPromises = formData.surveyors.map(async (surveyor) => {
+                    if (surveyor.surveyor_id) {
+                        const response = await GetUserById(surveyor.surveyor_id);
+                        if (response.status === "Ok" && response.data[0]?.call_sign) {
+                            return response.data[0].call_sign;
+                        }
+                    }
+                    return "";
+                });
+
+                const fetchedCallSigns = await Promise.all(callSignPromises);
+                setCallSigns(fetchedCallSigns.filter(Boolean).join(", ")); // Join array into a string
+            }
+        };
+
+        fetchCallSigns();
+    }, [formData.surveyors]);
+
+    const handleSearch = async (callSign: string) => {
+        setLoading(true);
+        try {
+            const response = await GetUserByCallSign(callSign.trim());
+            if (response.status === "Ok") {
+                setResult(response.data[0]);
+                setError(null);
+            } else {
+                setResult(null);
+                setError("User not found");
+            }
+        } catch (error) {
+            setError("An error occurred while searching");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const debouncedSearch = useCallback(
+        debounce((callSign: string) => {
+            handleSearch(callSign);
+        }, 1000),
+        []
+    );
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
@@ -23,6 +153,22 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
             ...prev,
             [id]: value,
         }));
+    };
+
+    const handleAddSurveyor = () => {
+        if (result) {
+            setFormData((prev) => ({
+                ...prev,
+                surveyors: [
+                    ...(prev.surveyors || []),
+                    { surveyor_id: result.id }, // Tambahkan surveyor_id ke formData
+                ],
+            }));
+            setCallSigns((prev) => [...prev.split(", ").filter(Boolean), result.call_sign || ""].join(", ")); // Tambahkan call_sign ke UI
+            setResult(null); // Hapus hasil pencarian setelah ditambahkan
+            setError(null); // Hapus error jika ada
+            setSearchInput(""); // Kosongkan kolom pencarian
+        }
     };
 
     const handleSubmit = () => {
@@ -37,14 +183,24 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
             }}
             className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
         >
-            <div
-                className="absolute inset-0"
-                onClick={onClose}
-            ></div>
-            <Card>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="absolute inset-0" onClick={onClose}></div>
+            <Card className="relative bg-gray-50 shadow-lg rounded-lg w-full m-5 md:m-10 overflow-x-scroll xl:overflow-x-hidden z-50 p-6">
+                <div className="grid grid-cols-2 gap-4">
                     <section>
-                        <div className="flex flex-col gap-4">
+                        <div className="">
+                            <label htmlFor="title" className="text-sm font-semibold">
+                                Title:
+                            </label>
+                            <Input
+                                type="text"
+                                id="title"
+                                placeholder="Title"
+                                value={formData.title || ""}
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-md p-2"
+                            />
+                        </div>
+                        <div className="">
                             <label htmlFor="form_number" className="text-sm font-semibold">
                                 Form Number:
                             </label>
@@ -57,7 +213,7 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                                 className="border border-gray-300 rounded-md p-2"
                             />
                         </div>
-                        <div className="flex flex-col gap-4">
+                        <div className="">
                             <label htmlFor="questor_name" className="text-sm font-semibold">
                                 Questor Name:
                             </label>
@@ -70,7 +226,7 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                                 className="border border-gray-300 rounded-md p-2"
                             />
                         </div>
-                        <div className="flex flex-col gap-4">
+                        <div className="">
                             <label htmlFor="fat" className="text-sm font-semibold">
                                 FAT:
                             </label>
@@ -83,27 +239,27 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                                 className="border border-gray-300 rounded-md p-2"
                             />
                         </div>
-                        <div className="flex flex-col gap-4">
+                        <div className="">
                             <label htmlFor="customer_name" className="text-sm font-semibold">
                                 Customer Name:
                             </label>
                             <Input
                                 type="text"
                                 id="customer_name"
-                                placeholder="Customer Name"
+                                placeholder="customer name"
                                 value={formData.customer_name || ""}
                                 onChange={handleChange}
                                 className="border border-gray-300 rounded-md p-2"
                             />
                         </div>
-                        <div className="flex flex-col gap-4">
+                        <div className="">
                             <label htmlFor="address" className="text-sm font-semibold">
                                 Address:
                             </label>
                             <Input
                                 type="text"
                                 id="address"
-                                placeholder="Address"
+                                placeholder="address"
                                 value={formData.address || ""}
                                 onChange={handleChange}
                                 className="border border-gray-300 rounded-md p-2"
@@ -111,82 +267,119 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                         </div>
                     </section>
                     <section>
-                        <div className="flex flex-col gap-4">
-                            <label htmlFor="node_fdt" className="text-sm font-semibold">
-                                Node FDT:
-                            </label>
-                            <Input
-                                type="text"
-                                id="node_fdt"
-                                placeholder="Node FDT"
-                                value={formData.node_fdt || ""}
-                                onChange={handleChange}
-                                className="border border-gray-300 rounded-md p-2"
-                            />
-                        </div>
-                        <div className="flex flex-col gap-4">
+                        <div className="">
                             <label htmlFor="survey_date" className="text-sm font-semibold">
                                 Survey Date:
                             </label>
                             <Input
                                 type="date"
                                 id="survey_date"
-                                value={formData.survey_date ? formData.survey_date.toString() : ""}
-                                onChange={handleChange}
-                                className="border border-gray-300 rounded-md p-2"
-                            />
-                        </div>
-                        <div className="flex flex-col gap-4">
-                            <label htmlFor="status" className="text-sm font-semibold">
-                                Status:
-                            </label>
-                            <Input
-                                type="text"
-                                id="status"
-                                placeholder="Status"
-                                value={formData.status || ""}
-                                onChange={handleChange}
-                                className="border border-gray-300 rounded-md p-2"
-                            />
-                        </div>
-                        <div className="flex flex-col gap-4">
-                            <label htmlFor="remark" className="text-sm font-semibold">
-                                image:
-                            </label>
-                            <Input
-                                type="text"
-                                id="image"
-                                placeholder="image"
-                                value={formData.remark || ""}
-                                onChange={handleChange}
-                                className="border border-gray-300 rounded-md p-2"
-                            />
-                        </div>
-                        <div className="flex flex-col gap-4">
-                            <label htmlFor="surveyor" className="text-sm font-semibold">
-                                Surveyors:
-                            </label>
-                            <Input
-                                type="text"
-                                id="surveyor"
-                                placeholder="Surveyor"
-                                value={formData.surveyors?.[0]?.surveyor_id || ""}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        surveyors: [
-                                            { ...prev.surveyors?.[0], surveyor_id: e.target.value },
-                                        ],
-                                    }))
+                                placeholder="survey_date"
+                                value={
+                                    formData.survey_date instanceof Date
+                                        ? formData.survey_date.toISOString().split("T")[0]
+                                        : formData.survey_date || ""
                                 }
+                                onChange={handleChange}
                                 className="border border-gray-300 rounded-md p-2"
                             />
                         </div>
+                        <div className="">
+                            <label htmlFor="call_sign" className="text-sm font-semibold">
+                                Surveyor Call Sign:
+                            </label>
+                            <Input
+                                type="text"
+                                id="call_sign"
+                                placeholder="Search call sign"
+                                value={searchInput} // Gunakan state searchInput
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSearchInput(value); // Perbarui nilai input pencarian
+                                    debouncedSearch(value); // Lakukan pencarian hanya pada bagian terakhir
+                                }}
+                                className="border border-gray-300 rounded-md p-2"
+                            />
+                            {loading && <p className="text-sm text-gray-500">Loading...</p>}
+                            {error && <p className="text-sm text-red-500">{error}</p>}
+                            {result && (
+                                <div
+                                    className="bg-gray-200 text-sm px-3 py-1 rounded-md cursor-pointer mt-2"
+                                    onClick={handleAddSurveyor}
+                                >
+                                    {result.call_sign}
+                                </div>
+                            )}
+                            <div className="mt-2">
+                                <p className="text-sm font-semibold">Selected Surveyors:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {callSigns.trim().split(",").map((callSign, index) => (
+                                        <div
+                                            key={index}
+                                            className="bg-gray-300 text-sm px-3 py-1 rounded-md"
+                                        >
+                                            {callSign}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <section className="flex flex-col justify-center mt-4">
+                            <div
+                                className="border border-dashed border-gray-400 rounded-md p-3 text-center"
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={handleFileDrop}
+                                onClick={() => document.getElementById("fileInput")?.click()} // Klik input file secara programatik
+                            >
+                                {!selectedFile && (
+                                    <p className="text-sm text-gray-500">Drag and drop an image here, or click to select a file</p>
+                                )}
+                                <Input
+                                    id="fileInput" // Tambahkan ID untuk referensi
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="hidden" // Tetap tersembunyi, tetapi dapat diakses melalui klik
+                                />
+                                {previewUrl && (
+                                    <img
+                                        src={previewUrl}
+                                        alt="Preview"
+                                        className={`${selectedFile? 'mt-0': 'mt-4'} w-full h-auto max-h-40 object-contain`}
+                                    />
+                                )}
+                            </div>
+                            <button
+                                onClick={handleUpload}
+                                disabled={!selectedFile || uploading}
+                                className={`mt-4 px-4 py-2 rounded-md cursor-pointer ${uploading ? "bg-gray-400" : "bg-blue-500 text-white"
+                                    }`}
+                            >
+                                {uploading ? "Uploading..." : "Upload Image"}
+                            </button>
+                        </section>
+
                     </section>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                    <button
+                        onClick={onClose}
+                        className="bg-gray-300 px-4 py-2 rounded-md"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        disabled={!formData.image_id}
+                        onClick={handleSubmit}
+                        className={`px-4 py-2 rounded-md ${formData.image_id ? "bg-blue-500 text-white cursor-pointer" : "bg-blue-500/50 cursor-not-allowed"
+                            }`}
+                    >
+                        Submit
+                    </button>
                 </div>
             </Card>
         </div>
-    )
-}
+    );
+};
 
-export default SurveyForm
+export default SurveyForm;

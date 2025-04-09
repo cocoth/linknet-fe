@@ -34,6 +34,22 @@ export const GetFile = async (q: string): Promise<ResponseAPI> => {
 
     return data
 }
+export const GetFileByID = async (id: string): Promise<ResponseAPI> => {
+    const response = await fetch(`/api/files/search?id=${id}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+    });
+
+    const data:ResponseAPI = await response.json();
+    if (!response.ok) {
+        return data
+    }
+
+    return data
+}
 
 export const UploadFile = async (file: File): Promise<ResponseAPI> => {
     const formData = new FormData();

@@ -16,7 +16,7 @@ const ViewReport = ({ data, onClose }: { data: SurveyView, onClose: () => void }
                 onClick={onClose}
             ></div>
             <Card
-                className="relative bg-gray-50 shadow-lg rounded-lg w-max overflow-x-scroll xl:overflow-x-hidden z-50 p-6"
+                className="relative bg-gray-50 shadow-lg rounded-lg w-max mx-3 md:mx-5 overflow-x-scroll xl:overflow-x-hidden z-50 p-6"
             >
                 <table className='w-full'>
                     <thead className='w-full'>

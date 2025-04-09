@@ -4,7 +4,7 @@ import Navbar from '@/components/custom/navbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { AddSurvey, DeleteSurvey, DownloadSurveyReportAsExcel, GetSurveyByTitle, GetSurveys, GetViewReport } from '@/lib/be-survey-handler'
+import { AddSurvey, DeleteSurvey, DownloadSurveyReportAsExcel, GetSurveyByTitle, GetSurveys, GetViewReport, UpdateSurvey } from '@/lib/be-survey-handler'
 import { UpdateUser } from '@/lib/be-user-handler'
 import { ConvertDateToString, debounce } from '@/lib/utils'
 import { Survey, SurveyView } from '@/types/type'
@@ -18,14 +18,17 @@ import SurveyForm from '@/components/custom/survey-form'
 
 
 const SurveyPage = () => {
-    const [datas, setDatas] = useState<Survey[]>([])
+    const [surveys, setSurveys] = useState<Survey[]>([])
     const [data, setData] = useState<Survey | null>(null)
     const [dataToDelete, setDataToDelete] = useState<Survey | null>(null)
+    const [dataToEdit, setDataToEdit] = useState<Survey | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState<boolean>(true)
+    
     const [alertKey, setAlertKey] = useState<number>(0)
     const [dialogue, setDialogue] = useState<boolean>(false)
-    const [isSurveyFormVisible, setIsSurveyFormVisible] = useState(false)
+
+    const [surveyView, setSurveyView] = useState(false)
     const [isVisible, setIsVisible] = useState<boolean>(false)
     const [report, setReport] = useState<SurveyView | null>(null)
 
@@ -40,7 +43,7 @@ const SurveyPage = () => {
             setLoading(true)
             const result = await GetSurveys()
             if (result.status === "Ok") {
-                setDatas(result.data)
+                setSurveys(result.data)
                 setError(null)
             } else {
                 showAlert(result.message || "Failed to fetch surveys")
@@ -56,7 +59,7 @@ const SurveyPage = () => {
             setLoading(true)
             const result = await GetSurveyByTitle(lq)
             if (result.status === "Ok") {
-                setDatas(result.data)
+                setSurveys(result.data)
                 setError(null)
             } else {
                 showAlert(result.message || "Failed to search survey")
@@ -86,12 +89,12 @@ const SurveyPage = () => {
     }
 
     const handleEditSurvey = async (survey: Survey) => {
-        if (data) {
+        if (dataToEdit) {
             try {
-                const result = await UpdateUser(data.id!, survey);
+                const result = await UpdateSurvey(dataToEdit.id!, survey);
                 if (result.status === "Ok") {
-                    setDatas((prev) =>
-                        prev.map((u) => (u.id === data.id ? { ...u, ...data } : u))
+                    setSurveys((prev) =>
+                        prev.map((u) => (u.id === dataToEdit.id ? { ...u, ...data } : u))
                     );
                 }
             } catch (error) {
@@ -118,7 +121,7 @@ const SurveyPage = () => {
         try {
             const response = await AddSurvey(survey)
             if (response.status === "Ok") {
-                setDatas((prev) => [...prev, response.data])
+                setSurveys((prev) => [...prev, response.data])
                 setError(null)
             } else {
                 showAlert(response.message || "Failed to add survey")
@@ -192,10 +195,13 @@ const SurveyPage = () => {
                         </div>
                     ) : (
                         <ul className="space-y-2">
-                            {datas.map((wo, index) => (
+                            {surveyView && report && (
+                                <ViewReport data={report} onClose={()=>setSurveyView(false)} />
+                            )}
+                            {surveys.map((wo, index) => (
                                 <li
                                     onClick={() => {
-                                        setIsSurveyFormVisible(true)
+                                        setSurveyView(true)
                                         handleViewReport(wo)
                                     }}
                                     key={index}
@@ -215,7 +221,6 @@ const SurveyPage = () => {
                                     <div className="flex items-center justify-center mx-2">
                                         <button
                                             type='button'
-                                            // variant={"ghost"}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleDownloadFile(wo)
@@ -229,8 +234,8 @@ const SurveyPage = () => {
                                             variant={"ghost"}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setData(wo)
-                                                setDialogue(true);
+                                                setDataToEdit(wo); // Set the survey to edit
+                                                setIsVisible(true); // Open the SurveyForm
                                             }}
                                             className='cursor-pointer'
                                         >
@@ -259,18 +264,19 @@ const SurveyPage = () => {
                     <div className="fixed bottom-5 right-5 z-50">
                         <div
                             className='group cursor-pointer bg-blue-500 text-white p-2 md:p-4 shadow-lg shadow-black rounded-full hover:bg-blue-600'
-                            onClick={() => setIsVisible(true)}
+                            onClick={() =>{ 
+                                setDataToEdit(null)
+                                setIsVisible(true)
+                            }}
                         >
                             <AiFillPlusCircle className="w-8 md:w-12 h-max" />
                         </div>
                     </div>
-                    {isVisible && data && (
+                    {isVisible && (
                         <SurveyForm
-                            survey={data}
-                            onSubmit={()=>{}}
-                            onClose={() => {
-                                setIsSurveyFormVisible(false);
-                            }}
+                            survey={dataToEdit || undefined}
+                            onSubmit={dataToEdit ? handleEditSurvey : handleAddSurvey}
+                            onClose={() => setIsVisible(false)}
                         />
                     )}
                 </section>

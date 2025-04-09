@@ -5,19 +5,37 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
     const cookie = req.headers.get("cookie");
     const url = new URL(req.url);
-    const filename = url.searchParams.get("filename"); // Check for filename query parameter
+    const filename = url.searchParams.get("filename");
+    const id = url.searchParams.get("id");
 
-    const beRes = await fetch(`${process.env.BE_API_URL}/files${filename ? `?filename=${filename}` : ""}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            ...(cookie && { Cookie: cookie }),
-        },
-        credentials: "include",
-    });
+    if (id) {
+        const beRes = await fetch(`${process.env.BE_API_URL}/files?id=${id}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                ...(cookie && { Cookie: cookie }),
+            },
+            credentials: "include",
+        });
 
-    const data:ResponseAPI = await beRes.json();
-    const res = NextResponse.json(data);
+        const data:ResponseAPI = await beRes.json();
+        const res = NextResponse.json(data);
 
-    return res;
+        return res;
+    }else if (filename) {
+        const beRes = await fetch(`${process.env.BE_API_URL}/files?filename=${filename}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                ...(cookie && { Cookie: cookie }),
+            },
+            credentials: "include",
+        });
+
+        const data:ResponseAPI = await beRes.json();
+        const res = NextResponse.json(data);
+
+        return res;
+    }
+
 }

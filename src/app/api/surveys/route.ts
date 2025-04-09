@@ -36,3 +36,23 @@ export async function GET(req: NextRequest) {
         return res;
     }
 }
+
+export async function POST(req: NextRequest) {
+    const cookie = req.headers.get("cookie");
+    const body = await req.json();
+
+    const beRes = await fetch(`${process.env.BE_API_URL}/surveys`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...(cookie && { Cookie: cookie }),
+        },
+        credentials: "include",
+        body: JSON.stringify(body),
+    });
+
+    const data:ResponseAPI = await beRes.json();
+    const res = NextResponse.json(data);
+
+    return res;
+}

@@ -91,6 +91,23 @@ export const GetUserByName = async (name: string): Promise<ResponseAPI> => {
 
     return data
 }
+export const GetUserByCallSign = async (callsign: string): Promise<ResponseAPI> => {
+    const response = await fetch(`/api/users?call_sign=${callsign}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+    });
+
+    const data:ResponseAPI = await response.json();
+
+    if (!response.ok) {
+        return data
+    }
+
+    return data
+}
 
 export const UpdateUser = async (userId: string, user: User): Promise<ResponseAPI> => {
     const response = await fetch(`/api/user/${userId}`, {
