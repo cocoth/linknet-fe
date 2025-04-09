@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AddSurvey, DeleteSurvey, DownloadSurveyReportAsExcel, GetSurveyByTitle, GetSurveys, GetViewReport, UpdateSurvey } from '@/lib/be-survey-handler'
-import { UpdateUser } from '@/lib/be-user-handler'
 import { ConvertDateToString, debounce } from '@/lib/utils'
 import { Survey, SurveyView } from '@/types/type'
 import React, { useEffect, useState } from 'react'
@@ -20,7 +19,6 @@ import { DeleteFile } from '@/lib/be-file-handler'
 
 const SurveyPage = () => {
     const [surveys, setSurveys] = useState<Survey[]>([])
-    const [data, setData] = useState<Survey | null>(null)
     const [dataToDelete, setDataToDelete] = useState<Survey | null>(null)
     const [dataToEdit, setDataToEdit] = useState<Survey | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -95,7 +93,7 @@ const SurveyPage = () => {
                 const result = await UpdateSurvey(dataToEdit.id!, survey);
                 if (result.status === "Ok") {
                     setSurveys((prev) =>
-                        prev.map((u) => (u.id === dataToEdit.id ? { ...u, ...data } : u))
+                        prev.map((u) => (u.id === dataToEdit.id ? { ...u, ...dataToEdit } : u))
                     );
                 }
             } catch (error) {

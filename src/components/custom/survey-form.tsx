@@ -354,7 +354,7 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                         </div>
                         <section className="flex flex-col justify-center mt-4">
                             <div
-                                className="border border-dashed border-gray-400 rounded-md p-3 h-40 text-center"
+                                className="border border-dashed border-gray-400 rounded-md p-3 min-h-52 text-center"
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={handleFileDrop}
                                 onClick={() => document.getElementById("fileInput")?.click()} // Klik input file secara programatik
@@ -373,7 +373,7 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                                     <img
                                         src={previewUrl}
                                         alt="Preview"
-                                        className={`${selectedFile ? 'mt-0' : 'mt-4'} w-full h-full max-h-40 object-contain`}
+                                        className={`${selectedFile ? 'mt-0' : 'mt-4'} w-full max-h-36 object-contain`}
                                     />
                                 )}
                             </div>
