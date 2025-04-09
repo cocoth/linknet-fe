@@ -7,6 +7,7 @@ import { Survey, User } from "@/types/type";
 import { GetUserByCallSign, GetUserById } from "@/lib/be-user-handler";
 import { debounce } from "@/lib/utils";
 import { DownloadFile, GetFileByID, UploadFile } from "@/lib/be-file-handler";
+import { AlertDialouge } from "./alert-dialogue";
 
 interface SurveyFormProps {
     onClose: () => void;
@@ -35,10 +36,16 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
 
     const [searchInput, setSearchInput] = useState<string>(""); // State untuk input pencarian
     const [error, setError] = useState<string | null>(null)
+    const [alertKey, setAlertKey] = useState(0)
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
+
+    const showAlert = (msg: string) => {
+        setAlertKey((p) => p + 1)
+        setError(msg)
+    }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -71,16 +78,13 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                         ...prev,
                         image_id: fileResponse.data[0].id, // Set image_id from response
                     }));
-                    alert("File uploaded successfully!");
                 } else {
-                    alert(fileResponse.message);
+                    showAlert(fileResponse.message || "Failed to get file ID.");
                 }
             } else {
-                alert("Failed to upload file.");
+                showAlert("Failed to upload file.");
             }
         } catch (error) {
-            console.error("Error uploading file:", error);
-            alert("An error occurred during file upload.");
         } finally {
             setUploading(false);
         }
@@ -184,6 +188,7 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
             className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
         >
             <div className="absolute inset-0" onClick={onClose}></div>
+             {error && (<AlertDialouge key={alertKey} message={error} />)}
             <Card className="relative bg-gray-50 shadow-lg rounded-lg w-full m-5 md:m-10 overflow-x-scroll xl:overflow-x-hidden z-50 p-6">
                 <div className="grid grid-cols-2 gap-4">
                     <section>
