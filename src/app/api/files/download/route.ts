@@ -27,11 +27,11 @@ export async function GET(req: NextRequest) {
     }
 
     const contentType = beRes.headers.get("Content-Type");
-    
+
     const res = new Response(blob, {
         headers: {
             "Content-Type": contentType || "application/octet-stream",
-            "Content-Disposition": `attachment; filename="${fileName}"`,
+            "Content-Disposition": `inline; filename="${fileName}"`,
         },
     });
 
