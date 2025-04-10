@@ -14,7 +14,10 @@ export async function middleware(req: NextRequest) {
   });
 
   if (!validateResponse.ok) {
-    return NextResponse.redirect(new URL("/", req.url));
+    if (req.nextUrl.pathname !== "/") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    return NextResponse.next();
   }
 
   if (req.nextUrl.pathname === "/") {
@@ -26,9 +29,10 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*", // hanya aktif di /dashboard dan sub-route-nya
+    "/dashboard/:path*",
     "/survey/:path*",
     "/ismart/:path*",
     "/user-profile/:path*",
+    "/",
   ],
 };
