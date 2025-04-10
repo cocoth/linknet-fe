@@ -26,9 +26,11 @@ export async function GET(req: NextRequest) {
         }
     }
 
-    const res = new NextResponse(blob, {
+    const contentType = beRes.headers.get("Content-Type");
+    
+    const res = new Response(blob, {
         headers: {
-            "Content-Type": beRes.headers.get("Content-Type") || "application/octet-stream",
+            "Content-Type": contentType || "application/octet-stream",
             "Content-Disposition": `attachment; filename="${fileName}"`,
         },
     });

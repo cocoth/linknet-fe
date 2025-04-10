@@ -73,8 +73,8 @@ const Dashboard = () => {
     };
 
     const handleEditClick = (file: FileData) => {
-        setFileToEdit(file); // Set file yang sedang diedit
-        setIsFileDropVisible(true); // Tampilkan FileDrop
+        setFileToEdit(file);
+        setIsFileDropVisible(true);
     };
 
     const handleFileEdit = async (file: File) => {
