@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const beRes = await fetch(`${process.env.BE_API_URL}/isadmin`, {
+  const beRes = await fetch(`${process.env.BE_API_URL}/admin-login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",

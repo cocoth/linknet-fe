@@ -185,13 +185,13 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                 ...prev,
                 surveyors: [
                     ...(prev.surveyors || []),
-                    { surveyor_id: result.id }, // Tambahkan surveyor_id ke formData
+                    { surveyor_id: result.id },
                 ],
             }));
             setCallSigns((prev) => [...prev.split(", ").filter(Boolean), result.call_sign || ""].join(", ")); // Tambahkan call_sign ke UI
-            setResult(null); // Hapus hasil pencarian setelah ditambahkan
-            setError(null); // Hapus error jika ada
-            setSearchInput(""); // Kosongkan kolom pencarian
+            setResult(null);
+            setError(null); 
+            setSearchInput("");
         }
     };
 

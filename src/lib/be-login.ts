@@ -31,3 +31,30 @@ export async function HandleLogin(
     }
   }
 }
+
+export async function HandleLogout(): Promise<ResponseAPI> {
+  try {
+    const response = await fetch(`/api/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    const data:ResponseAPI = await response.json();
+    
+    if (!response.ok) {
+      return data
+    }
+
+    return data
+  } catch (error) {
+    return {
+      code: 400,
+      status: "error",
+      message: "An error occurred during logout",
+      data: null,
+    }
+  }
+}

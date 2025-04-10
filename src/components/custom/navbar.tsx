@@ -3,11 +3,22 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
-import { FaBell } from "react-icons/fa";
 import { usePathname } from 'next/navigation';
+import { IoMdLogOut } from 'react-icons/io';
+import { HandleLogout } from '@/lib/be-login';
 
 const Navbar = () => {
-    const pathname = usePathname(); // Gunakan useRouter untuk mendapatkan path saat ini
+    const pathname = usePathname();
+
+    const handleLogout = async () => {
+        const response = await HandleLogout()
+        if (response.code === 200) {
+            document.cookie = "session_token=; path=/; domain=" + window.location.hostname + "; expires=Thu, 01 Jan 1970 00:00:00 UTC;"
+            window.location.href = '/'
+        } else {
+            alert(response.message)
+        }
+    }
 
     return (
         <nav className='flex justify-between items-center bg-gray-50 shadow-md shadow-black'>
@@ -43,6 +54,14 @@ const Navbar = () => {
                         <Link href="/user-profile">
                             Profile User
                         </Link>
+                    </li>
+                    <li className={`flex text-center p-1 md:p-2 rounded-lg hover:bg-red-500 hover:text-white text-red-500 font-bold`}>
+                        <button
+                            onClick={() => handleLogout()}
+                            className='flex items-center justify-center'
+                        >
+                            <IoMdLogOut className='w-5 h-full text-2xl cursor-pointer' />
+                        </button>
                     </li>
                 </ul>
             </section>
