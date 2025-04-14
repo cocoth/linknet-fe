@@ -290,6 +290,19 @@ const SurveyForm = ({ onClose, onSubmit, survey }: SurveyFormProps) => {
                                 className="border border-gray-300 rounded-md p-2"
                             />
                         </div>
+                        <div className="">
+                            <label htmlFor="node_fdt" className="text-sm font-semibold">
+                                Node FDT:
+                            </label>
+                            <Input
+                                type="text"
+                                id="node_fdt"
+                                placeholder="node_fdt"
+                                value={formData.node_fdt || ""}
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-md p-2"
+                            />
+                        </div>
                     </section>
                     <section>
                         <div className="">
